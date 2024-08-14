@@ -1,0 +1,64 @@
+---
+const links = [
+  {
+    text: 'Listado',
+    href: '/',
+  },
+  {
+    text: 'Paginado',
+    href: '/pokemons/1',
+  },
+  {
+    text: 'Favoritos',
+    href: '/favorites',
+  },
+  {
+    text: 'Islas',
+    href: '/islands',
+  },
+];
+
+//* Muestra el path actual de la pagina 
+const currentPath = Astro.url.pathname;
+console.log(currentPath);
+---
+
+<!-- component -->
+<nav class="shadow bg-slate-900">
+  <div class="container flex items-center justify-center p-6 mx-auto text-gray-600 capitalize dark:text-gray-300">
+    <!-- {
+      links.map(({text,href}) => (
+       <a 
+        href={href}
+        class:list={["text-gray-800 dark:text-gray-200 mx-1.5 sm:mx-6",{"border-b-2 border-blue-500": currentPath === href}]}
+      >
+        {text}
+      </a>
+      ))
+    } -->
+
+    {
+      links.map(({text,href}) => (
+       <div>
+        <a 
+          href={href}
+          class={"text-gray-200 mx-1.5 sm:mx-6"}
+        >
+          {text}
+        </a>
+        
+        {currentPath === href ? (
+          <div 
+            transition:name="menu-line"
+            class="border-b-2 border-blue-500 mx-4"
+          />
+        ): (
+          <div 
+            class="border-b-2 border-transparent"
+          />
+        )}
+       </div>
+      ))
+    }
+  </div>
+</nav>

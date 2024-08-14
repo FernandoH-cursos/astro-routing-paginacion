@@ -1,0 +1,151 @@
+---
+import type { GetStaticPaths } from "astro";
+import MainLayout from "@layouts/MainLayout.astro";
+import PokemonCard from "@components/pokemons/PokemonCard.astro";
+import Title from "@components/shared/Title.astro";
+
+import type { PokemonListResponse } from "@interfaces/pokemon-list.response";
+
+import {Icon} from "astro-icon/components";
+
+//* Crear páginas dinámica para cada pokémon(SSG)
+export const getStaticPaths = (async() => {
+  const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=151');
+  const { results } = await res.json() as PokemonListResponse;
+  
+  return results.map(({ name,url }) => ({
+    params: { name },
+    props: {name,url}
+  }));
+}) satisfies GetStaticPaths;
+
+//* Obtiene el param path de la pagina dinamica
+const { name } = Astro.params;
+//* props de la pagina dinamica
+const { url } = Astro.props;
+
+const id = url.split('/').at(-2);
+const audioSrc = `https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/${id}.ogg`;
+const imageSrc = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+
+---
+
+<MainLayout 
+  title={`Pokémon - #${id} ${name}`} 
+  description={`Información sobre el pokémon ${name}`}
+  image={imageSrc}
+>
+  <section class="flex flex-col justify-center items-center mt-10 mx-10">
+    <div class="flex flex-row">
+      <div>
+        <!-- 'history.back()' nos redirecciona a la pagina anterior del historial de rutas -->
+        <button 
+            onclick="history.back()"
+            class="text-blue-500"
+          >
+            Regresar
+          </button>
+          <Title>{name}</Title>
+        </div>
+
+        <button id="btn-favorite" class="ml-4" data-name={name} data-id={id}>
+          <Icon data-outline name="heart-outline" size={50}/>
+          <Icon data-full class="text-red-700 hidden" name="heart-full" size={50}/>
+        </button>
+    </div>
+
+    <PokemonCard name={name} url={url} isBig />
+
+    <audio controls class="mt-5">
+      <source src={audioSrc} type="audio/ogg" />
+      Your browser does not support the audio element.
+    </audio>
+  </section>
+</MainLayout>
+
+<!-- Client Side Scripting (JS/TS en cliente) -->
+<script>
+  /* 
+  document.addEventListener('astro:before-preparation',() => {
+    console.log('astro:before-preparation');
+  });
+
+  document.addEventListener('astro:after-preparation',() => {
+    console.log('astro:after-preparation');
+  });
+
+  document.addEventListener('astro:before-swap',() => {
+    console.log('astro:before-swap');
+  });
+
+  document.addEventListener('astro:after-swap',() => {
+    console.log('astro:after-swap');
+  });
+
+  // Este evento se dispara al final de la navegación de la página, después de que la nueva página es visible para el 
+  // usuario y se han cargado los estilos y scripts bloqueantes. Si recibie {once: true} solo se ejecuta una vez.
+  document.addEventListener('astro:page-load',() => {
+    console.log('hola');
+  }); 
+  */
+
+  import type { FavoritePokemon } from "@interfaces/favorite-pokemon.response";
+
+  const handlePageLoad = () => {
+    let favoritesPokemons = JSON.parse(localStorage.getItem('favorites') ?? '[]') as FavoritePokemon[];
+
+    const $btnFavorite = document.querySelector('#btn-favorite') as HTMLButtonElement;
+    if(!$btnFavorite) return;
+  
+    const name = $btnFavorite.dataset.name ?? '';
+    const id = parseInt($btnFavorite.dataset.id!);
+
+    const $heartOutline = $btnFavorite.querySelector('[data-outline]') as HTMLElement;
+    const $heartFull = $btnFavorite.querySelector('[data-full]') as HTMLElement;
+
+    const toggleHeart = () => {
+      const isFavorite = favoritesPokemons.some(favorite => favorite.name === name);
+      $heartOutline.classList.toggle('hidden',isFavorite);
+      $heartFull.classList.toggle('hidden',!isFavorite);
+    }
+
+    const toggleFavorite = () => {
+      //* Verificar si el pokémon ya está en favoritos 
+      const isFavorite = favoritesPokemons.some(favorite => favorite.name === name);
+
+      if(isFavorite){
+        //* Remover el pokémon de favoritos 
+        favoritesPokemons = favoritesPokemons.filter(favorite => favorite.name !== name);
+        localStorage.setItem('favorites',JSON.stringify(favoritesPokemons));
+      }else{
+        //* Agregar el pokémon a favoritos 
+        favoritesPokemons = [...favoritesPokemons,{id,name}];
+        localStorage.setItem('favorites',JSON.stringify(favoritesPokemons));
+      }
+    }
+
+    toggleHeart();
+    
+    $btnFavorite.addEventListener('click', () => {
+      $heartOutline.classList.toggle('hidden');
+      $heartFull.classList.toggle('hidden');
+     
+      toggleFavorite();
+    });
+  }
+
+   
+  document.addEventListener('astro:page-load',handlePageLoad);
+  
+</script>
+
+<style>
+  a{
+    @apply hover:underline text-blue-500;
+  }
+
+  #btn-favorite{
+    @apply hover:animate-pulse;
+  }
+</style>
+

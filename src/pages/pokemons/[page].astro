@@ -1,0 +1,64 @@
+---
+// Código Server Side Only - Momento de construcción BUILD TIME
+import type { GetStaticPaths } from "astro";
+import MainLayout from "@layouts/MainLayout.astro";
+import PokemonCard from "@components/pokemons/PokemonCard.astro";
+import Title from "@components/shared/Title.astro";
+
+import type { PokemonListResponse } from '@interfaces/pokemon-list.response';
+
+//* Crear páginas dinámica para cada pokémon(SSG) usando paginación estática
+export const getStaticPaths = (async({paginate}) => {
+  const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=151');
+  const { results } = await res.json() as PokemonListResponse;
+  
+  //* Paginación estática 
+  return paginate(
+    results,
+    {
+      pageSize: 10,
+    }
+  );
+}) satisfies GetStaticPaths;
+
+const res = await fetch('https://pokeapi.co/api/v2/pokemon');
+const data = await res.json() as PokemonListResponse;
+
+const title = 'Pokémon Static | Home';
+
+//* 'page' es el nombre del archivo en la carpeta pokemons generada por la paginación de getStaticPaths
+const { page } = Astro.props;
+
+---
+
+<MainLayout title={title}>
+  <Title>Listado paginado</Title>
+
+  <section aria-label="Listado de Pokémons" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4 mt-5">
+    {
+      page.data.map(({ name, url }) => (
+        <PokemonCard name={name} url={url}  />
+      ))
+    }
+  </section>
+
+  <section class="flex items-center gap-2 pt-5">
+    <!-- 'page.url.prev' permite ir a la pagina anterior -->
+    <a href={page.url.prev} class:list={["btn",{disabled: !page.url.prev}]}>Anteriores</a>
+    <a href={page.url.next} class:list={["btn",{disabled: !page.url.next}]}>Siguientes</a>
+
+    <div class="flex flex-1"></div>
+
+    <span class="text-xl font-bold">Página {page.currentPage}</span>
+  </section>
+</MainLayout>
+
+<style>
+  .btn{
+    @apply bg-blue-500 p-2 text-white rounded-md;
+  }
+
+  .disabled{
+    @apply bg-gray-600 text-gray-400;
+  }
+</style>
